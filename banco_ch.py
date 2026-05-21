@@ -386,4 +386,4 @@ def main():
 # EXECUÇÃO
 # ============================
 # Isso é tudo
-main()
+#main()
