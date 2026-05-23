@@ -6,65 +6,68 @@ app = FastAPI()
 
 
 
-class Users(BaseModel):
+class Conta(BaseModel):
     nome: str
-    cpf: str
     data_nascimento: str
     endereco: str
-
-class Conta(BaseModel):
     cpf: str
+    agencia: str
+    numero_conta: int
+    limite: float
 
 
 @app.post("/Criar_Conta/")
 def criar_conta(conta: Conta):
-    usuario = filtrar_usuario(conta.cpf)
-    if not usuario:
-        return {"message": "Usuário não encontrado!"}
+        conta_nova ={
+        "nome": conta.nome,
+        "cpf": conta.cpf,
+        "data_nascimento": conta.data_nascimento,
+        "endereco": conta.endereco,
+        "agencia": conta.agencia,
+        "numero_conta": conta.numero_conta, 
+        "limite": conta.limite,
+        }
+        contas.append(conta_nova)
+        
+        return {"message": "Conta criada com sucesso!"}
     
-    numero_conta = len(contas)+1
-    nova_conta = ContaCorrente(
-        numero_conta, usuario
-    )
-    usuario.adicionar_conta(nova_conta)
-    contas.append(nova_conta)
-    return {"message": "Conta criada com sucesso!"}
+     
+
+@app.get("/Contas/")
+def listar_contas():
+    return contas
+
+@app.get("/Selecionar_Conta/")
+def get_account(agencia: str,):
+    for conta in contas:
+        if conta["agencia"] == agencia:
+            return conta
+    return {"message": "Conta não encontrada."}
 
 
-@app.post("/Criar_Usuario/")
-def criar_usuario(usuario: Users):
-    if filtrar_usuario(usuario.cpf):
-        return {"message": "Usuário já existe!"}
-    
-    novo_usuario = PessoaFisica(
-        usuario.nome,
-        usuario.cpf,
-        usuario.data_nascimento,
-        usuario.endereco
-    )
-
-    print("antes", usuarios)
-
-    usuarios.append(novo_usuario)
-    print("depois", usuarios)
-    return {"message": "Usuário criado com sucesso!"}
-    
-
-@app.get("/Users/")
-def listar_users():
-
-    return {
-        "usuarios": [
-            {
-                "nome": usuario.nome,
-                "cpf": usuario.cpf,
-                "data_nascimento": usuario.data_nascimento,
-                "endereco": usuario.endereco
-            }
-            for usuario in usuarios
-        ]
-    }
+@app.post("/Depositar/")
+def depositar(agencia: str, valor: float):
+    for conta in contas:
+        if conta["agencia"] == agencia:
+            conta["limite"] += valor
+            return {"message": f"Depósito realizado com sucesso para {conta['nome']}!", "novo_limite": conta["limite"]}
+    return {"message": "Conta não encontrada."}
 
 
+@app.post("/Sacar/")
+def sacar(agencia: str, valor: float):
+    for conta in contas:
+        if conta["agencia"] == agencia:
+            if valor > conta["limite"]:
+                return {"message": "Saldo insuficiente!"}
+            conta["limite"] -= valor
+            return {"message": f"Saque realizado com sucesso para {conta['nome']}!", "novo_limite": conta["limite"]}
+        
+    return {"message": "Conta não encontrada."}
 
-#uvicorn api:app --reload
+@app.get("/Historico/")
+def historico(agencia: str):
+    for conta in contas:
+        if conta["agencia"] == agencia:
+            return {"message": f"Histórico de transações para {conta['nome']}!"}
+    return {"message": "Conta não encontrada."}
